@@ -1,0 +1,2 @@
+# Building_Energy_Efficiency_Considering_Cost
+In this code, the multi-objective problem of maximizing energy efficiency and minimizing cost for a smart building is solved by Lexicographic method in GAMS software. I investigated the impacts of lamps with different energy labels, high-efficiency home appliances, HVAC systems, insulated windows, natural light strategy, etc. on the energy efficiency of the building.
