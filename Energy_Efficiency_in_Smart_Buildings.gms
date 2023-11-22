@@ -1,26 +1,21 @@
 sets
 t /0*8760/
-
-s /s1*s5/
-v /v1*v7/
 ;
 
 scalars
-*L_total_lighting lumen /14391/
 HVAC_size /16/
 N_persons /5/
 Temprature /25/
 eta_L /0.0000125/
 miu_L /80000/
 alpha /0.000527528/
-probability /0.00011415525/
-max_ch_ESS /15/
-max_dch_ESS /15/
-max_ch_TSS /16/
-max_dch_TSS /16/
+max_ch_ESS /5/
+max_dch_ESS /5/
+max_ch_TSS /500/
+max_dch_TSS /500/
 max_buy /5/
 max_sell /5/
-price_gas_grid /0.27/
+price_gas_grid /0.05/
 
 c_w_and_d /18000/
 c_leaking /4100/
@@ -28,34 +23,24 @@ Capital_cost_PVT /1810/
 Capital_cost_ESS /18740/
 Capital_cost_TSS /8000/
 Capital_cost_HVAC /5000/
+max_cost_lightbulbs /140/
+max_cost_appliances /30000/
 ;
 
 parameters
 
-cost_lightbulbs(s)
+cost_lightbulbs
 /
-s1 4.2
-s2 36.6
-s3 7.62
-s4 5.76
-s5 13.64
+13.64
 /
 
-cost_appliances(v)
+cost_appliances
 /
-v1 1581.098852
-v2 1581.098852
-v3 1581.098852
-v4 1581.098852
-v5 1950.021916
-v6 2405.027029
-v7 2966.2
+2966.2
 /
 
-*Landa_esl /0.6/
-*zeta_high_efficiency /0.9/
-Landa_esl(s) /s1 0.1,s2 0.13,s3 0.3,s4 0.4,s5 0.6/
-zeta_high_efficiency(v) /v1 0.03,v2 0.09,v3 0.24,v4 0.45,v5 0.6,v6 0.75,v7 0.9/
+Landa_esl /0.6/
+zeta_high_efficiency /0.9/
 
 price_grid(t)
 
@@ -87698,19 +87683,22 @@ EC_HVAC(t)
 8759        0.380037552
 8760        0.397784917
 /
+TC_PVT_WH(t)
 ;
-P_PVT(t)=P_PV(t)*4;
+P_PVT(t)=P_PV(t)*1.1;
 price_grid(t)=price_grid_1(t)/(10**6);
+P_PV(t)=P_PV(t)+EPS;
+Tout(t)=Tout(t)+EPS;
+TC_PVT_WH(t)=(EC_Water_heater(t)-(Tout(t)-Tin)*alpha)
 
 variables
 cost
 T_saving(t)
-PEE(t,s)
-P_saving(t,s)
-EC_saving_appliances(t,v)
+PEE(t)
+P_saving(t)
+EC_saving_appliances(t)
 gama_nls
-EC_high_efficiency(t,v)
-TC_PVT_WH(t)
+EC_high_efficiency(t)
 C_fix
 cost_buy(t)
 revenue_sell(t)
@@ -87756,29 +87744,27 @@ I_TSS(t)
 J_TSS(t)
 I_buy(t)
 J_sell(t)
-I_lightbulbs(s)
-I_appliance(v)
 ;
 
-S_leaking.fx=0.15;
-I_w_and_d.fx=0.1;
-BO.fx=0.05;
-gama_nls.fx=0.2;
-SOC_ESS.fx('0')=15;
+S_leaking.up=0.15;
+I_w_and_d.up=0.1;
+BO.up=0.05;
+gama_nls.up=0.2;
+SOC_ESS.fx('0')=0;
 SOC_ESS.lo(t)=0;
-SOC_ESS.up(t)=50;
-SOC_TSS.fx('0')=16;
+SOC_ESS.up(t)=10;
+SOC_TSS.fx('0')=0;
 SOC_TSS.lo(t)=0;
-SOC_TSS.up(t)=16;
-gas_grid.up(t)=16;
-I_lightbulbs.fx('s5')=1;
-I_appliance.fx('v7')=1;
+SOC_TSS.up(t)=500;
+gas_grid.up(t)=500;
 
+ch_ESS.fx('0')=0;
+dch_ESS.fx('0')=0;
 
 equations
 obj
-Eq1
-Eq2
+*Eq1
+*Eq2
 Eq3
 Eq4
 Eq5
@@ -87790,7 +87776,7 @@ Eq9
 Eq10
 Eq11
 Eq12
-Eq13
+*Eq13
 Eq14
 Eq15
 Eq16
@@ -87808,12 +87794,19 @@ Eq26
 Eq27
 Eq28
 C_fix_eq
+*Eq1_1
+*Eq2_2
+*Eq7_2
+Eq25_1
+Eq26_1
 ;
 
-obj.. cost=e=sum(s,cost_lightbulbs(s)*I_lightbulbs(s))+sum(v,cost_appliances(v)*I_appliance(v))+sum(t$(ord(t) gt 1),cost_buy(t)-revenue_sell(t)+cost_buy_gas(t))+cost_I_w_and_d+cost_S_leaking+C_fix;
+obj.. cost=e=cost_lightbulbs+cost_appliances+sum(t$(ord(t) gt 1),cost_buy(t)-revenue_sell(t)+cost_buy_gas(t))+cost_I_w_and_d+cost_S_leaking+C_fix;
 
-Eq1.. sum(s,I_lightbulbs(s))=e=1;
-Eq2.. sum(v,I_appliance(v))=e=1;
+*Eq1.. sum(s,I_lightbulbs(s))=e=1;
+*Eq2.. sum(v,I_appliance(v))=e=1;
+*Eq1_1(s).. cost_lightbulbs(s)=l=I_lightbulbs(s)*max_cost_lightbulbs;
+*Eq2_2(v).. cost_appliances(v)=l=I_appliance(v)*max_cost_appliances;
 
 Eq3(t)$(ord(t) gt 1).. cost_buy(t)=e=buy_grid(t)*price_grid(t);
 Eq4(t)$(ord(t) gt 1).. revenue_sell(t)=e=sell_grid(t)*price_grid(t);
@@ -87828,19 +87821,20 @@ C_fix_eq.. C_fix=e=Capital_cost_PVT+Capital_cost_ESS+Capital_cost_TSS+Capital_co
 *Capital_cost_PVT_eq.. Capital_cost_PVT=e=sum(t,P_PVT(t)*0.33);
 
 *obj.. BEE=e=
-Eq7.. BEE=e=1-(sum(t$(ord(t) gt 1),(P_total_lighting(t)-sum(s,P_saving(t,s)*I_lightbulbs(s)))+(EC_total_appliance(t)-sum(v,EC_saving_appliances(t,v)*I_appliance(v)))+TC_PVT_WH(t)+(Thermal_cooling(t)+Thermal_heating(t)-T_saving(t))))/(sum(t$(ord(t) gt 1),P_total_lighting(t)+EC_total_appliance(t)+TC_PVT_WH(t)+Thermal_cooling(t)+Thermal_heating(t)));
-Eq7_1.. BEE=g=0.35;
+Eq7.. BEE=e=1-(sum(t$(ord(t) gt 1),(P_total_lighting(t)-P_saving(t))+(EC_total_appliance(t)-EC_saving_appliances(t))+TC_PVT_WH(t)+(Thermal_cooling(t)+Thermal_heating(t)-T_saving(t))))/(sum(t$(ord(t) gt 1),P_total_lighting(t)+EC_total_appliance(t)+TC_PVT_WH(t)+Thermal_cooling(t)+Thermal_heating(t)));
+Eq7_1.. BEE=g=0.374;
+*Eq7_2.. BEE=l=1;
 
-Eq8(t).. T_saving(t)=e=(S_leaking*(Thermal_cooling(t)+Thermal_heating(t))+I_w_and_d*(Thermal_cooling(t)+Thermal_heating(t))+BO*(Thermal_cooling(t)+Thermal_heating(t)));
+Eq8(t)$(ord(t) gt 1).. T_saving(t)=e=(S_leaking*(Thermal_cooling(t)+Thermal_heating(t))+I_w_and_d*(Thermal_cooling(t)+Thermal_heating(t))+BO*(Thermal_cooling(t)+Thermal_heating(t)));
 *Eq2.. HVAC_size=e=(((HVAC_Length*HVAC_Breadth*20)/12000)*N_persons+Temprature+HVAC_height);
 *Eq3.. P_total_lighting=e=L_total_lighting*eta_L;
 *Eq9.. P_saving=e=(((P_PV*0.01)*miu_L)+Landa_esl*L_total_lighting+gama_nls*L_total_lighting)*eta_L;
-Eq9(t,s)$(ord(t) gt 1).. P_saving(t,s)=e=(Landa_esl(s)*P_total_lighting(t)+gama_nls*P_total_lighting(t));
-Eq10(t,s)$(ord(t) gt 1).. PEE(t,s)=e=P_total_lighting(t)-P_saving(t,s);
-Eq11(t,v)$(ord(t) gt 1).. EC_saving_appliances(t,v)=e=zeta_high_efficiency(v)*EC_total_appliance(t);
-Eq12(t,v)$(ord(t) gt 1).. EC_high_efficiency(t,v)=e=EC_total_appliance(t)-EC_saving_appliances(t,v);
-Eq13(t)$(ord(t) gt 1).. TC_PVT_WH(t)=e=(EC_Water_heater(t)-(Tout(t)-Tin)*alpha);
-Eq14(t)$(ord(t) gt 1).. P_total_lighting(t)-sum(s,P_saving(t,s)*I_lightbulbs(s))+EC_total_appliance(t)-sum(v,EC_saving_appliances(t,v)*I_appliance(v))+ch_ESS(t)+EC_HVAC_saving(t)+sell_grid(t)=e=dch_ESS(t)+P_PV(t)+buy_grid(t);
+Eq9(t)$(ord(t) gt 1).. P_saving(t)=e=(Landa_esl*P_total_lighting(t)+gama_nls*P_total_lighting(t));
+Eq10(t)$(ord(t) gt 1).. PEE(t)=e=P_total_lighting(t)-P_saving(t);
+Eq11(t)$(ord(t) gt 1).. EC_saving_appliances(t)=e=zeta_high_efficiency*EC_total_appliance(t);
+Eq12(t)$(ord(t) gt 1).. EC_high_efficiency(t)=e=EC_total_appliance(t)-EC_saving_appliances(t);
+*Eq13(t)$(ord(t) gt 1).. TC_PVT_WH(t)=e=(EC_Water_heater(t)-(Tout(t)-Tin)*alpha);
+Eq14(t)$(ord(t) gt 1).. P_total_lighting(t)-P_saving(t)+EC_total_appliance(t)-EC_saving_appliances(t)+ch_ESS(t)+EC_HVAC_saving(t)+sell_grid(t)=e=dch_ESS(t)+P_PV(t)+buy_grid(t);
 
 Eq15(t)$(ord(t) gt 1).. buy_grid(t)=l=I_buy(t)*max_buy;
 Eq16(t)$(ord(t) gt 1).. sell_grid(t)=l=J_sell(t)*max_sell;
@@ -87855,16 +87849,17 @@ Eq22(t)$(ord(t) gt 1).. ch_TSS(t)=l=I_TSS(t)*max_ch_TSS;
 Eq23(t)$(ord(t) gt 1).. dch_TSS(t)=l=J_TSS(t)*max_dch_TSS;
 Eq24(t)$(ord(t) gt 1).. I_TSS(t)+J_TSS(t)=l=1;
 
-Eq25(t)$(ord(t) gt 1).. SOC_ESS(t)=e=SOC_ESS(t-1)+ch_ESS(t)*0.9-dch_ESS(t)/0.9;
-Eq26(t)$(ord(t) gt 1).. SOC_TSS(t)=e=SOC_TSS(t-1)+ch_TSS(t)*0.9-dch_TSS(t)/0.9;
-
+Eq25(t)$(ord(t) gt 1).. SOC_ESS(t)=e=SOC_ESS(t-1)+(ch_ESS(t)*0.9-dch_ESS(t)/0.9);
+Eq25_1(t).. SOC_ESS('0')=e=0;
+Eq26(t)$(ord(t) gt 1).. SOC_TSS(t)=e=SOC_TSS(t-1)+(ch_TSS(t)-dch_TSS(t));
+Eq26_1(t).. SOC_TSS('0')=e=0;
 Eq28(t)$(ord(t) gt 1).. EC_HVAC_saving(t)=e=(EC_HVAC(t)*((Thermal_cooling(t)+Thermal_heating(t))-T_saving(t)))/(Thermal_cooling(t)+Thermal_heating(t)+0.00001);
 
 
 model Energy_Efficiency /all/;
-option rminlp=minos;
-option Iterlim=900;
-solve Energy_Efficiency using rminlp minimizing cost;
-display BEE.l,EC_total_appliance,P_PV,P_PVT,I_lightbulbs.l,I_appliance.l,gas_grid.l,S_leaking.l,I_w_and_d.l,BO.l,T_saving.l,HVAC_size,PEE.l,cost.l,P_saving.l,EC_saving_appliances.l,P_total_lighting,gama_nls.l,EC_high_efficiency.l,TC_PVT_WH.l,SOC_ESS.l,SOC_TSS.l,ch_ESS.l,dch_ESS.l,ch_TSS.l,dch_TSS.l;
-execute_unload 'D:\UCout.gdx',BEE,EC_total_appliance,P_PV,P_PVT,I_lightbulbs,I_appliance,gas_grid,S_leaking,I_w_and_d,BO,T_saving,HVAC_size,PEE,cost,P_saving,EC_saving_appliances,P_total_lighting,gama_nls,EC_high_efficiency,TC_PVT_WH,SOC_ESS,SOC_TSS,ch_ESS,dch_ESS,ch_TSS,dch_TSS;
+*option mip=cplex;
+*option Iterlim=900;
+solve Energy_Efficiency using mip minimizing cost;
+display Tout,price_grid,BEE.l,EC_total_appliance,P_PV,P_PVT,gas_grid.l,S_leaking.l,I_w_and_d.l,BO.l,T_saving.l,HVAC_size,PEE.l,cost.l,P_saving.l,EC_saving_appliances.l,P_total_lighting,gama_nls.l,EC_high_efficiency.l,TC_PVT_WH,SOC_ESS.l,SOC_TSS.l,ch_ESS.l,dch_ESS.l,ch_TSS.l,dch_TSS.l,buy_grid.l,sell_grid.l;
+execute_unload 'D:\UCout.gdx',Tout,price_grid,BEE,EC_total_appliance,P_PV,P_PVT,gas_grid,S_leaking,I_w_and_d,BO,T_saving,HVAC_size,PEE,cost,P_saving,EC_saving_appliances,P_total_lighting,gama_nls,EC_high_efficiency,TC_PVT_WH,SOC_ESS,SOC_TSS,ch_ESS,dch_ESS,ch_TSS,dch_TSS,buy_grid,sell_grid;
 execute 'gdxviewer.exe i=D:\UCout.gdx';
