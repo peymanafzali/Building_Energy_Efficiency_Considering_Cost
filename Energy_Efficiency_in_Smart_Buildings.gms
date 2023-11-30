@@ -3,12 +3,14 @@ t /0*8760/
 ;
 
 scalars
+*L_total_lighting lumen /14391/
 HVAC_size /16/
 N_persons /5/
 Temprature /25/
 eta_L /0.0000125/
 miu_L /80000/
 alpha /0.000527528/
+probability /0.00011415525/
 max_ch_ESS /5/
 max_dch_ESS /5/
 max_ch_TSS /500/
